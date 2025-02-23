@@ -14,10 +14,10 @@ export default function Home() {
 
     // Subscribe to real-time changes in "users" table
     const subscription = supabase
-      .channel("users")
+      .channel("user")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "users" },
+        { event: "*", schema: "public", table: "user" },
         (payload) => {
           if (payload.eventType === "INSERT") {
             setUsers((prevUsers) => [...prevUsers, payload.new]);
@@ -42,14 +42,14 @@ export default function Home() {
   }, []);
 
   async function fetchUsers() {
-    const { data, error } = await supabase.from("users").select();
+    const { data, error } = await supabase.from("user").select();
     if (error) console.error("Error fetching users:", error);
     else setUsers(data);
   }
 
   async function handleCreateUser() {
     if (!newUser.name || !newUser.age || !newUser.address) return;
-    await supabase.from("users").insert([
+    await supabase.from("user").insert([
       {
         name: newUser.name,
         age: Number(newUser.age),
@@ -62,7 +62,7 @@ export default function Home() {
   async function handleUpdateUser() {
     if (!editingUser) return;
     await supabase
-      .from("users")
+      .from("user")
       .update({
         name: editingUser.name,
         age: editingUser.age,
@@ -73,7 +73,7 @@ export default function Home() {
   }
 
   async function handleDeleteUser(id: number) {
-    await supabase.from("users").delete().eq("id", id);
+    await supabase.from("user").delete().eq("id", id);
   }
 
   return (
