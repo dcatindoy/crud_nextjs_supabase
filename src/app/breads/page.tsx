@@ -10,7 +10,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { AlertCircle, Plus } from "lucide-react";
 import { z } from "zod";
@@ -24,39 +23,28 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useState } from "react";
 
 export default function BreadPage() {
   const headers = ["ID", "Name", "Price"];
   const invoices = [
-    {
-      ID: "INV001",
-      Name: "Cheese Bread",
-      Price: "$250.00",
-    },
-    {
-      ID: "INV002",
-      Name: "Pandesal",
-      Price: "$150.00",
-    },
-    {
-      ID: "INV003",
-      Name: "Ensaymada",
-      Price: "$350.00",
-    },
+    { ID: "INV001", Name: "Cheese Bread", Price: "250" },
+    { ID: "INV002", Name: "Pandesal", Price: "150" },
+    { ID: "INV003", Name: "Ensaymada", Price: "350" },
   ];
 
-  const handleEdit = (row: Record<string, any>) => {
-    console.log("Editing:", row);
-  };
-
-  const handleDelete = (row: Record<string, any>) => {
-    console.log("Deleting:", row);
-  };
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<"add" | "edit">("add");
+  const [selectedRow, setSelectedRow] = useState<{
+    name: string;
+    price: number;
+  } | null>(null);
 
   const BreadSchema = z.object({
     name: z.string().min(2).max(50),
     price: z.coerce.number().min(1),
   });
+
   const form = useForm<z.infer<typeof BreadSchema>>({
     resolver: zodResolver(BreadSchema),
     defaultValues: {
@@ -65,8 +53,27 @@ export default function BreadPage() {
     },
   });
 
+  const openSheetForAdd = () => {
+    setSheetMode("add");
+    setSelectedRow(null);
+    form.reset({ name: "", price: 0 });
+    setIsSheetOpen(true);
+  };
+
+  const openSheetForEdit = (row: Record<string, any>) => {
+    setSheetMode("edit");
+    setSelectedRow({ name: row.Name, price: Number(row.Price) });
+    form.reset({ name: row.Name, price: Number(row.Price) });
+    setIsSheetOpen(true);
+  };
+
   function onSubmit(values: z.infer<typeof BreadSchema>) {
-    console.log(values);
+    if (sheetMode === "add") {
+      console.log("Adding:", values);
+    } else {
+      console.log("Editing:", values);
+    }
+    setIsSheetOpen(false);
   }
 
   return (
@@ -75,60 +82,13 @@ export default function BreadPage() {
         <div className="flex justify-between">
           <h1 className="text-3xl font-semibold mb-4">Manage Breads</h1>
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button size="lg">
-                <Plus /> Add Bread
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Add Bread</SheetTitle>
-                <SheetDescription>
-                  Add a new bread that will be available in the store.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="grid gap-4 py-4">
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Eg: Ensaymada" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Price</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" size="lg">
-                      Add
-                    </Button>
-                  </form>
-                </Form>
-              </div>
-            </SheetContent>
-          </Sheet>
+          {/* Add Button */}
+          <Button size="lg" onClick={openSheetForAdd}>
+            <Plus /> Add Bread
+          </Button>
         </div>
+
+        {/* Alert */}
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle className="font-bold">Alert</AlertTitle>
@@ -137,13 +97,73 @@ export default function BreadPage() {
             Ensaymada.
           </AlertDescription>
         </Alert>
+
+        {/* Table */}
         <CustomTable
           caption="A list of available breads."
           headers={headers}
           data={invoices}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={openSheetForEdit}
+          onDelete={(row) => console.log("Deleting:", row)}
         />
+
+        {/* Sheet */}
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>
+                {sheetMode === "add" ? "Add Bread" : "Edit Bread"}
+              </SheetTitle>
+              <SheetDescription>
+                {sheetMode === "add"
+                  ? "Add a new bread that will be available in the store."
+                  : "Update the details of this bread."}
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="grid gap-4 py-4">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  {/* Name Field */}
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Eg: Ensaymada" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/* Price Field */}
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/* Submit Button */}
+                  <Button type="submit" className="w-full" size="lg">
+                    {sheetMode === "add" ? "Add" : "Save Changes"}
+                  </Button>
+                </form>
+              </Form>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );
