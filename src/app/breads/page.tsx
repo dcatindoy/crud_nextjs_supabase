@@ -11,6 +11,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AlertCircle, Plus } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -27,17 +37,21 @@ import { useState } from "react";
 
 export default function BreadPage() {
   const headers = ["ID", "Name", "Price"];
-  const invoices = [
+  const [invoices, setInvoices] = useState([
     { ID: "INV001", Name: "Cheese Bread", Price: "250" },
     { ID: "INV002", Name: "Pandesal", Price: "150" },
     { ID: "INV003", Name: "Ensaymada", Price: "350" },
-  ];
+  ]);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<"add" | "edit">("add");
   const [selectedRow, setSelectedRow] = useState<{
     name: string;
     price: number;
+  } | null>(null);
+  const [deleteRow, setDeleteRow] = useState<{
+    ID: string;
+    Name: string;
   } | null>(null);
 
   const BreadSchema = z.object({
@@ -65,6 +79,21 @@ export default function BreadPage() {
     setSelectedRow({ name: row.Name, price: Number(row.Price) });
     form.reset({ name: row.Name, price: Number(row.Price) });
     setIsSheetOpen(true);
+  };
+
+  const confirmDelete = (row: { ID: string; Name: string }) => {
+    setDeleteRow(row);
+  };
+
+  const handleDelete = () => {
+    if (!deleteRow) return;
+
+    console.log("Deleting:", deleteRow);
+
+    // Simulating API call
+    setInvoices((prev) => prev.filter((item) => item.ID !== deleteRow.ID));
+
+    setDeleteRow(null);
   };
 
   function onSubmit(values: z.infer<typeof BreadSchema>) {
@@ -104,7 +133,7 @@ export default function BreadPage() {
           headers={headers}
           data={invoices}
           onEdit={openSheetForEdit}
-          onDelete={(row) => console.log("Deleting:", row)}
+          onDelete={confirmDelete}
         />
 
         {/* Sheet */}
@@ -164,6 +193,37 @@ export default function BreadPage() {
             </div>
           </SheetContent>
         </Sheet>
+
+        {/* Delete Confirmation Dialog */}
+        {deleteRow && (
+          <AlertDialog
+            open={!!deleteRow}
+            onOpenChange={(open) => !open && setDeleteRow(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Are you sure you want to delete this item?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. You will remove{" "}
+                  <b>{deleteRow.Name}</b> from the list.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteRow(null)}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
     </div>
   );
